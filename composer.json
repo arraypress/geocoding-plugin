@@ -10,8 +10,8 @@
     }
   ],
   "require": {
-    "php": "^7.4 || ^8.0",
-    "arraypress/ipinfo": "dev-main"
+    "php": ">=7.4",
+    "arraypress/geocoding": "dev-main"
   },
   "minimum-stability": "dev",
   "prefer-stable": true

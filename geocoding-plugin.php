@@ -23,6 +23,8 @@ defined( 'ABSPATH' ) || exit;
  */
 require_once __DIR__ . '/vendor/autoload.php';
 
+use ArrayPress\Geocoding\Response\Location;
+
 /**
  * Plugin class to handle all the functionality
  */
@@ -39,6 +41,10 @@ class Plugin {
 	 * Initialize the plugin
 	 */
 	public function __construct() {
+
+		// Load translations
+		add_action( 'init', [ $this, 'load_plugin_textdomain' ] );
+
 		// Initialize client if API key is set
 		$api_key = get_option( 'geocoding_api_key' );
 		if ( $api_key ) {
@@ -51,12 +57,23 @@ class Plugin {
 	}
 
 	/**
+	 * Load plugin translations
+	 */
+	public function load_plugin_textdomain() {
+		load_plugin_textdomain(
+			'arraypress-geocoding',
+			false,
+			dirname( plugin_basename( __FILE__ ) ) . '/languages/'
+		);
+	}
+
+	/**
 	 * Add admin menu pages
 	 */
 	public function add_admin_menu() {
 		add_management_page(
-			'Geocoding Tester',
-			'Geocoding Tester',
+			__( 'Geocoding Tester', 'arraypress-geocoding' ),
+			__( 'Geocoding Tester', 'arraypress-geocoding' ),
 			'manage_options',
 			'geocoding-tester',
 			[ $this, 'render_admin_page' ]
@@ -71,14 +88,14 @@ class Plugin {
 
 		add_settings_section(
 			'geocoding_settings_section',
-			'API Settings',
-			null,
+			__( 'API Settings', 'arraypress-geocoding' ),
+			'__return_empty_string', // Use WordPress built-in function
 			'geocoding-tester'
 		);
 
 		add_settings_field(
 			'geocoding_api_key',
-			'Maps.co API Key',
+			__( 'Maps.co API Key', 'arraypress-geocoding' ),
 			[ $this, 'render_api_key_field' ],
 			'geocoding-tester',
 			'geocoding_settings_section'
@@ -117,7 +134,7 @@ class Plugin {
 		// Render the page
 		?>
         <div class="wrap">
-            <h1>Geocoding Tester</h1>
+            <h1><?php _e('Geocoding Tester', 'arraypress-geocoding'); ?></h1>
 
             <!-- Settings Form -->
 			<?php $this->render_settings_form(); ?>
@@ -144,7 +161,7 @@ class Plugin {
 			<?php
 			settings_fields( 'geocoding_settings' );
 			do_settings_sections( 'geocoding-tester' );
-			submit_button( 'Save API Key' );
+			submit_button( __( 'Save API Key', 'arraypress-geocoding' ) );
 			?>
         </form>
 		<?php
@@ -155,57 +172,57 @@ class Plugin {
 	 */
 	private function render_test_interface( $test_type, $address, $latitude, $longitude ) {
 		?>
-        <h2>Test Options</h2>
+        <h2><?php _e( 'Test Options', 'arraypress-geocoding' ); ?></h2>
         <form method="post">
             <table class="form-table">
                 <!-- Test Type Selection -->
                 <tr>
-                    <th scope="row">Test Type</th>
+                    <th scope="row"><?php _e( 'Test Type', 'arraypress-geocoding' ); ?></th>
                     <td>
                         <label>
                             <input type="radio" name="test_type" value="forward"
 								<?php checked( $test_type, 'forward' ); ?>>
-                            Forward Geocoding (Address to Coordinates)
+							<?php _e( 'Forward Geocoding (Address to Coordinates)', 'arraypress-geocoding' ); ?>
                         </label>
                         <br>
                         <label>
                             <input type="radio" name="test_type" value="reverse"
 								<?php checked( $test_type, 'reverse' ); ?>>
-                            Reverse Geocoding (Coordinates to Address)
+							<?php _e( 'Reverse Geocoding (Coordinates to Address)', 'arraypress-geocoding' ); ?>
                         </label>
                     </td>
                 </tr>
 
                 <!-- Forward Geocoding Fields -->
                 <tr class="forward-fields" style="<?php echo $test_type === 'reverse' ? 'display:none;' : ''; ?>">
-                    <th scope="row"><label for="address">Address</label></th>
+                    <th scope="row"><label for="address"><?php _e( 'Address', 'arraypress-geocoding' ); ?></label></th>
                     <td>
                         <input type="text" name="address" id="address"
                                value="<?php echo esc_attr( $address ); ?>"
                                class="regular-text">
-                        <p class="description">Enter a full address (e.g., "1600 Pennsylvania Avenue NW, Washington,
-                            DC")</p>
+                        <p class="description"><?php _e( 'Enter a full address (e.g., "1600 Pennsylvania Avenue NW, Washington, DC")', 'arraypress-geocoding' ); ?></p>
                     </td>
                 </tr>
 
                 <!-- Reverse Geocoding Fields -->
                 <tr class="reverse-fields" style="<?php echo $test_type === 'forward' ? 'display:none;' : ''; ?>">
-                    <th scope="row"><label for="latitude">Coordinates</label></th>
+                    <th scope="row"><label for="latitude"><?php _e( 'Coordinates', 'arraypress-geocoding' ); ?></label>
+                    </th>
                     <td>
                         <input type="number" step="any" name="latitude" id="latitude"
                                value="<?php echo esc_attr( $latitude ); ?>"
-                               placeholder="Latitude"
+                               placeholder="<?php esc_attr_e( 'Latitude', 'arraypress-geocoding' ); ?>"
                                style="width: 150px;">
                         <input type="number" step="any" name="longitude" id="longitude"
                                value="<?php echo esc_attr( $longitude ); ?>"
-                               placeholder="Longitude"
+                               placeholder="<?php esc_attr_e( 'Longitude', 'arraypress-geocoding' ); ?>"
                                style="width: 150px;">
-                        <p class="description">Enter latitude and longitude coordinates</p>
+                        <p class="description"><?php _e( 'Enter latitude and longitude coordinates', 'arraypress-geocoding' ); ?></p>
                     </td>
                 </tr>
             </table>
 
-			<?php submit_button( 'Run Test', 'primary', 'submit', false ); ?>
+			<?php submit_button( __( 'Run Test', 'arraypress-geocoding' ), 'primary', 'submit', false ); ?>
         </form>
 		<?php
 	}
@@ -244,27 +261,46 @@ class Plugin {
             <tbody>
             <!-- Basic Information -->
             <tr>
-                <th>Coordinates</th>
+                <th><?php _e( 'Coordinates', 'arraypress-geocoding' ); ?></th>
                 <td>
-                    Latitude: <?php echo esc_html( $results->get_latitude() ); ?><br>
-                    Longitude: <?php echo esc_html( $results->get_longitude() ); ?>
+					<?php _e( 'Latitude:', 'arraypress-geocoding' ); ?> <?php echo esc_html( $results->get_latitude() ); ?>
+                    <br>
+					<?php _e( 'Longitude:', 'arraypress-geocoding' ); ?> <?php echo esc_html( $results->get_longitude() ); ?>
                 </td>
             </tr>
 
+            <!-- Map Links -->
             <tr>
-                <th>Display Name</th>
-                <td><?php echo esc_html( $results->get_display_name() ); ?></td>
+                <th><?php _e( 'Map Links', 'arraypress-geocoding' ); ?></th>
+                <td>
+					<?php
+					$map_urls = $results->get_map_urls();
+					if ( ! empty( $map_urls ) ) {
+						echo '<ul style="margin: 0; list-style: none;">';
+						foreach ( $map_urls as $service => $url ) {
+							if ( $url ) {
+								/* translators: %s: map service name (e.g. "Google Maps") */
+								$label = sprintf( __( '%s Maps', 'arraypress-geocoding' ), ucwords( $service ) );
+								echo '<li style="margin-bottom: 5px;"><a href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $label ) . '</a></li>';
+							}
+						}
+						echo '</ul>';
+					} else {
+						echo '<em>' . __( 'No map links available', 'arraypress-geocoding' ) . '</em>';
+					}
+					?>
+                </td>
             </tr>
 
             <!-- Display Name -->
             <tr>
-                <th>Formatted Address</th>
+                <th><?php _e( 'Formatted Address', 'arraypress-geocoding' ); ?></th>
                 <td><?php echo esc_html( $results->get_display_name() ); ?></td>
             </tr>
 
             <!-- Address Components -->
             <tr>
-                <th>Address Components</th>
+                <th><?php _e( 'Address Components', 'arraypress-geocoding' ); ?></th>
                 <td>
 					<?php if ( $address = $results->get_address() ): ?>
 						<?php foreach ( $address as $component => $value ): ?>
@@ -274,41 +310,43 @@ class Plugin {
 							?>
 						<?php endforeach; ?>
 					<?php else: ?>
-                        <em>No detailed address components available.</em>
+                        <em><?php _e( 'No detailed address components available.', 'arraypress-geocoding' ); ?></em>
 					<?php endif; ?>
                 </td>
             </tr>
 
             <!-- OpenStreetMap Information -->
             <tr>
-                <th>OSM Information</th>
+                <th><?php _e( 'OSM Information', 'arraypress-geocoding' ); ?></th>
                 <td>
-                    Place ID: <?php echo esc_html( $results->get_place_id() ); ?><br>
-                    OSM Type: <?php echo esc_html( $results->get_osm_type() ); ?><br>
-                    OSM ID: <?php echo esc_html( $results->get_osm_id() ); ?>
+					<?php _e( 'Place ID:', 'arraypress-geocoding' ); ?> <?php echo esc_html( $results->get_place_id() ); ?>
+                    <br>
+					<?php _e( 'OSM Type:', 'arraypress-geocoding' ); ?> <?php echo esc_html( $results->get_osm_type() ); ?>
+                    <br>
+					<?php _e( 'OSM ID:', 'arraypress-geocoding' ); ?> <?php echo esc_html( $results->get_osm_id() ); ?>
                 </td>
             </tr>
 
             <!-- License Information -->
             <tr>
-                <th>License</th>
+                <th><?php _e( 'License', 'arraypress-geocoding' ); ?></th>
                 <td><?php echo esc_html( $results->get_license() ); ?></td>
             </tr>
 
             <!-- Bounding Box -->
 			<?php if ( $results->has_bounding_box() ): ?>
-                <tr>
-                    <th>Bounding Box</th>
-                    <td>
-						<?php
-						$bbox = $results->get_bounding_box();
-						echo 'Min Latitude: ' . esc_html( $bbox['min_lat'] ) . '<br>';
-						echo 'Max Latitude: ' . esc_html( $bbox['max_lat'] ) . '<br>';
-						echo 'Min Longitude: ' . esc_html( $bbox['min_lon'] ) . '<br>';
-						echo 'Max Longitude: ' . esc_html( $bbox['max_lon'] );
-						?>
-                    </td>
-                </tr>
+            <tr>
+                <th><?php _e( 'Bounding Box', 'arraypress-geocoding' ); ?></th>
+                <td>
+                    <?php
+                    $bbox = $results->get_bounding_box();
+                    echo __( 'Min Latitude:', 'arraypress-geocoding' ) . ' ' . esc_html( $bbox['min_lat'] ) . '<br>';
+                    echo __( 'Max Latitude:', 'arraypress-geocoding' ) . ' ' . esc_html( $bbox['max_lat'] ) . '<br>';
+                    echo __( 'Min Longitude:', 'arraypress-geocoding' ) . ' ' . esc_html( $bbox['min_lon'] ) . '<br>';
+                    echo __( 'Max Longitude:', 'arraypress-geocoding' ) . ' ' . esc_html( $bbox['max_lon'] );
+                    ?>
+                </td>
+            </tr>
 			<?php endif; ?>
             </tbody>
         </table>
@@ -343,14 +381,15 @@ class Plugin {
 		if ( $results instanceof Location ) {
 			?>
             <div class="debug-info" style="background: #f5f5f5; padding: 15px; margin-top: 20px;">
-                <h3>Raw Response Data:</h3>
+                <h3><?php _e( 'Raw Response Data:', 'arraypress-geocoding' ); ?></h3>
                 <pre style="background: #fff; padding: 10px; overflow: auto;">
-                    <?php print_r( $results->get_raw_data() ); ?>
-                </pre>
+                   <?php print_r( $results->get_raw_data() ); ?>
+               </pre>
             </div>
 			<?php
 		}
 	}
+
 }
 
 new Plugin();
